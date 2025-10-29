@@ -38,12 +38,6 @@ class DogRepository {
 
     }
 
-    // récupération des races de chiens depuis l'API
-//    suspend fun getChien() : List<Chien> {
-//        val url = "https://api.thedogapi.com/v1/breeds"
-//        return client.request(url).body()
-//    }
-
     // /v1/breeds
     suspend fun getChien(): List<Chien> =
         client.get("https://api.thedogapi.com/v1/breeds") {

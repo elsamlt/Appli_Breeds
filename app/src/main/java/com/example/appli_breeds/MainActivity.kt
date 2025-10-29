@@ -3,7 +3,6 @@ package com.example.appli_breeds
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,9 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,6 +31,7 @@ import com.example.appli_breeds.model.Chien
 // --- Destinations
 sealed class Destination
 object ListeRaces : Destination()
+object ListeFavoris : Destination()
 data class DetailRace(val chien: Chien) : Destination()
 
 class MainActivity : ComponentActivity() {
@@ -49,14 +48,16 @@ fun AppliChiens() {
     val viewModel: DogViewModel = viewModel()
     val chiens by viewModel.dogs.collectAsState(initial = emptyList())
 
-    LaunchedEffect(Unit) {
-        viewModel.loadDogs()
-    }
+    LaunchedEffect(Unit) { viewModel.loadDogs() }
 
     when (val top = backStack.last()) {
         is ListeRaces -> EcranListeChiens(
             chiens = chiens,
-            onChienClick = { backStack.add(DetailRace(it)) }
+            onChienClick = { backStack.add(DetailRace(it)) },
+            onAvatarClick = { backStack.add(ListeFavoris) }
+        )
+        is ListeFavoris -> EcranFavoris(
+            onBack = { backStack.removeLastOrNull() }
         )
         is DetailRace -> EcranDetailChien(
             chien = top.chien,
@@ -68,16 +69,16 @@ fun AppliChiens() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EcranListeChiens(
-    chiens: List<Chien>,                // liste complète (loadDogs)
-    onChienClick: (Chien) -> Unit
+    chiens: List<Chien>,
+    onChienClick: (Chien) -> Unit,
+    onAvatarClick: () -> Unit
 ) {
     val vm: DogViewModel = viewModel()
 
     var query by rememberSaveable { mutableStateOf("") }
-    val visible by vm.visibleBreeds.collectAsState()  // liste affichée (search ou all)
-    val scope = rememberCoroutineScope()
+    val visible by vm.visibleBreeds.collectAsState()
 
-    // Debounce: lance la recherche 300ms après la dernière frappe
+    // Debounce de la recherche
     LaunchedEffect(query) {
         kotlinx.coroutines.delay(300)
         vm.searchOrAll(query)
@@ -85,10 +86,7 @@ fun EcranListeChiens(
 
     Scaffold(
         topBar = {
-            Surface(
-                tonalElevation = 2.dp,
-                shadowElevation = 3.dp
-            ) {
+            Surface(tonalElevation = 2.dp, shadowElevation = 3.dp) {
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
@@ -103,7 +101,8 @@ fun EcranListeChiens(
                             modifier = Modifier
                                 .padding(start = 16.dp)
                                 .size(36.dp)
-                                .clip(CircleShape),
+                                .clip(CircleShape)
+                                .clickable { onAvatarClick() },
                             contentScale = ContentScale.Crop
                         )
                     }
@@ -117,7 +116,7 @@ fun EcranListeChiens(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // ---- Barre Search + bouton filtre (style bulle arrondie) ----
+            // ---- Barre Search + bouton filtre (visuel) ----
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -127,12 +126,7 @@ fun EcranListeChiens(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Search"
-                        )
-                    },
+                    leadingIcon = { Icon(imageVector = Icons.Filled.Search, contentDescription = "Search") },
                     placeholder = { Text("Search") },
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
@@ -146,7 +140,7 @@ fun EcranListeChiens(
                 Spacer(Modifier.width(10.dp))
 
                 IconButton(
-                    onClick = { /* plus tard: filtre (groupe, taille, etc.) */ },
+                    onClick = { /* futur panneau filtres */ },
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
@@ -176,16 +170,6 @@ fun EcranListeChiens(
             }
         }
     }
-}
-
-
-@Composable
-fun TopAppBar(
-    title: () -> Unit,
-    navigationIcon: () -> Unit,
-    actions: () -> Unit
-) {
-    TODO("Not yet implemented")
 }
 
 @Composable
@@ -225,7 +209,6 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
     val maxImageHeight = 280.dp
     val minImageHeight = 80.dp
 
-    // Hauteur dynamique pour effet “disparition”
     val imageHeight by remember {
         derivedStateOf {
             val offset = scrollState.firstVisibleItemScrollOffset.toFloat()
@@ -241,7 +224,7 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onRetour) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Retour"
                         )
                     }
@@ -255,7 +238,6 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Image principale (hauteur variable)
             item {
                 AsyncImage(
                     model = chien.imageUrl ?: chien.image.url,
@@ -266,8 +248,6 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
                     contentScale = ContentScale.Crop
                 )
             }
-
-            // Détails du chien
             item {
                 Column(Modifier.padding(16.dp)) {
                     Text(chien.name, style = MaterialTheme.typography.headlineSmall)
@@ -288,6 +268,34 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
                     Text(chien.history.ifBlank { "Aucune histoire disponible." })
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EcranFavoris(
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Mes favoris") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Aucun favori pour l’instant.")
         }
     }
 }
