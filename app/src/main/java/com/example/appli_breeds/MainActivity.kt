@@ -309,3 +309,8 @@ fun InfoTexte(label: String, value: String) {
         }
     }
 }
+
+
+// détail : l'histoire et la description des races ne fonctionnent pas donc surement que ça ne s'appelle pas comme ça.
+// favoris ne fonctionne pas : l'ajouter dans le repository et dans le frnt, juste la page a été ajoutée
+// faire le système de filtre
