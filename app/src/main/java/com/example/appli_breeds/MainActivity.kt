@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,8 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,9 +68,21 @@ fun AppliChiens() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EcranListeChiens(
-    chiens: List<Chien>,
+    chiens: List<Chien>,                // liste complète (loadDogs)
     onChienClick: (Chien) -> Unit
 ) {
+    val vm: DogViewModel = viewModel()
+
+    var query by rememberSaveable { mutableStateOf("") }
+    val visible by vm.visibleBreeds.collectAsState()  // liste affichée (search ou all)
+    val scope = rememberCoroutineScope()
+
+    // Debounce: lance la recherche 300ms après la dernière frappe
+    LaunchedEffect(query) {
+        kotlinx.coroutines.delay(300)
+        vm.searchOrAll(query)
+    }
+
     Scaffold(
         topBar = {
             Surface(
@@ -90,33 +106,78 @@ fun EcranListeChiens(
                                 .clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
-                    },
-                    actions = {
-                        IconButton(onClick = { /* notifications */ }) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = "Notifications",
-                                modifier = Modifier.size(26.dp)
-                            )
-                        }
-                        Spacer(Modifier.width(8.dp))
                     }
                 )
             }
         }
     ) { padding ->
-        LazyColumn(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            items(chiens) { chien ->
-                LigneChien(chien = chien, onClick = { onChienClick(chien) })
-                Divider()
+            // ---- Barre Search + bouton filtre (style bulle arrondie) ----
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    placeholder = { Text("Search") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    )
+                )
+
+                Spacer(Modifier.width(10.dp))
+
+                IconButton(
+                    onClick = { /* plus tard: filtre (groupe, taille, etc.) */ },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Tune,
+                        contentDescription = "Filter"
+                    )
+                }
+            }
+
+            // ---- Liste (affiche la recherche si query non vide, sinon la liste complète) ----
+            val data = if (query.isBlank()) chiens else visible
+
+            if (data.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(data) { chien ->
+                        LigneChien(chien = chien, onClick = { onChienClick(chien) })
+                        Divider()
+                    }
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun TopAppBar(

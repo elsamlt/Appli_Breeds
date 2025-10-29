@@ -53,20 +53,22 @@ class DogRepository {
         }.body()
 
     // récupération de l'image associée à la race par son id
-    suspend fun dogImage(referenceId: String): DogImage {
-        val url = "https://api.thedogapi.com/v1/images/$referenceId"
-        return client.request(url).body()
-    }
+    suspend fun dogImage(referenceId: String): DogImage =
+        client.get("https://api.thedogapi.com/v1/images/$referenceId") {
+            headers { append("x-api-key", API_KEY) }
+        }.body()
 
-    suspend fun searchBreeds(query: String): List<Chien> {
-        val url = "https://api.thedogapi.com/v1/breeds/search?q=$query"
-        return client.request(url).body()
-    }
+    suspend fun searchBreeds(query: String): List<Chien> =
+        client.get("https://api.thedogapi.com/v1/breeds/search") {
+            headers { append("x-api-key", API_KEY) }
+            url { parameters.append("q", query) }
+        }.body()
 
-    suspend fun getBreedDetails(id: Int): Chien {
-        val url = "https://api.thedogapi.com/v1/breeds/$id"
-        return client.request(url).body()
-    }
+    suspend fun getBreedDetails(id: Int): Chien =
+        client.get("https://api.thedogapi.com/v1/breeds/$id") {
+            headers { append("x-api-key", API_KEY) }
+        }.body()
+
 
 
 }

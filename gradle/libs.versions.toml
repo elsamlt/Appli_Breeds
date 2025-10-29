@@ -9,6 +9,7 @@ lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 composeBom = "2024.09.00"
 coilVersion = "3.3.0"
+materialIconsExtended = "<1.7.0>"
 nav3Core = "1.0.0-alpha01"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 kotlinSerialization = "2.1.21"
@@ -16,6 +17,7 @@ kotlinxSerializationCore = "1.8.1"
 ktorversion = "3.3.0"
 
 [libraries]
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
