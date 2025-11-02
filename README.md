@@ -10,7 +10,6 @@ et consulter les détails de chaque race pour mieux comprendre leurs caractéris
 **Objectif :** Permet aux utilisateurs de parcourir une galerie d'images de chiens, de rechercher une race spécifique, et de filtrer les résultats.
 
 - **Barre de recherche** : Un champ en haut de l'écran pour rechercher une race spécifique (exemple : "Bulldog", "Golden Retriever").
-- **Filtres** : Des options pour affiner la recherche par critères comme la taille, la durée de vie ou le tempérament.
 - **Galerie d'images** : Une grille d'images montrant différents chiens. Chaque image est cliquable et renvoie vers les détails de la race correspondante.
 
 ### Écran 2 : Détails d'une race de chien
