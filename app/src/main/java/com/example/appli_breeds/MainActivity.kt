@@ -1,6 +1,5 @@
 package com.example.appli_breeds
 
-
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -10,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.appli_breeds.model.Chien
+import com.example.appli_breeds.local.DatabaseProvider
 
 
 class MainActivity : ComponentActivity() {
@@ -20,25 +19,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun AppliChiens() {
     val backStack = remember { mutableStateListOf<Destination>(ListeRaces) }
-
-
-// subId stable par appareil
     val ctx = LocalContext.current
-    val subId = remember {
-        Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
-    }
+    val subId = remember { Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device" }
+    val db = remember { DatabaseProvider.get(ctx) }
 
 
-// ViewModel unique injecté
     val vm: DogViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return DogViewModel(subId = subId) as T
+                return DogViewModel(subId = subId, db = db) as T
             }
         }
     )
