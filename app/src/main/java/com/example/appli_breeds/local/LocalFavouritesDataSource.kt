@@ -9,7 +9,6 @@ class LocalFavouritesDataSource(private val dao: FavouriteDao) {
 
 
     suspend fun setAllFromRemote(pairs: List<Pair<String, Int?>>) {
-// Remplace le contenu local par l'état serveur
         dao.clearAll()
         dao.upsertAll(pairs.map { (imgId, serverId) -> FavouriteEntity(imageId = imgId, serverId = serverId) })
     }

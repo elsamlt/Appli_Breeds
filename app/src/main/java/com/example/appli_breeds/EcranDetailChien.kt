@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.appli_breeds.model.Chien
@@ -80,6 +81,16 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
 @Composable
 fun InfoTexte(label: String, value: String) {
     if (value.isNotBlank()) {
-        Row { Text("$label : ", style = MaterialTheme.typography.bodyMedium); Text(value, style = MaterialTheme.typography.bodyMedium) }
+        Row {
+            Text(
+                text = "$label : ",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }

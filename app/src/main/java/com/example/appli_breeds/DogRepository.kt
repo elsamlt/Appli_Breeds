@@ -55,23 +55,6 @@ class DogRepository {
             }
         }.body()
 
-    // récupération de l'image associée à la race par son id
-    suspend fun dogImage(referenceId: String): DogImage =
-        client.get("$url/images/$referenceId") {
-            headers { append("x-api-key", API_KEY) }
-        }.body()
-
-    suspend fun searchBreeds(query: String): List<Chien> =
-        client.get("$url/breeds/search") {
-            headers { append("x-api-key", API_KEY) }
-            url { parameters.append("q", query) }
-        }.body()
-
-    suspend fun getBreedDetails(id: Int): Chien =
-        client.get("$url/breeds/$id") {
-            headers { append("x-api-key", API_KEY) }
-        }.body()
-
     // --- Favourites
     suspend fun listFavourites(subId: String? = null): List<Favourite> =
         client.get("$url/favourites") {

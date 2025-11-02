@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "favourite")
 data class FavouriteEntity(
-    @PrimaryKey val imageId: String, // identifiant attendu par TheDogAPI
-    val serverId: Int? = null, // id du favouri coté serveur (pour DELETE)
+    @PrimaryKey val imageId: String,
+    val serverId: Int? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

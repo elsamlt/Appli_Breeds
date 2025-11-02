@@ -48,11 +48,6 @@ class DogViewModel(
         }
     }
 
-
-    fun getDogById(id: Int): Chien? = dogs.value.firstOrNull { it.id == id }
-
-
-    // ----- FAVORIS (identique, mais basé sur Room pour l'état) -----
     val favMap: StateFlow<Map<String, Int?>> = localFav.favouritesIdsFlow
         .map { ids -> ids.associateWith { null } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
@@ -82,9 +77,7 @@ class DogViewModel(
 
 
     init {
-// synchro favoris au lancement
         refreshFavouritesFromRemote()
-// peupler visibleBreeds au démarrage
         viewModelScope.launch { breedsRepo.observeAll().collect { _visibleBreeds.value = it } }
     }
 }

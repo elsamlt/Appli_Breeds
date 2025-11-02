@@ -43,9 +43,7 @@ object BreedEntityMapper {
         temperament = e.temperament ?: "",
         height = com.example.appli_breeds.model.Height(metric = e.heightMetric ?: ""),
         weight = com.example.appli_breeds.model.Weight(metric = e.weightMetric ?: ""),
-        // Correctly handle the potentially null referenceImageId
         reference_image_id = e.referenceImageId ?: "",
-        // Correctly handle the potentially null values for the DogImage constructor
         image = com.example.appli_breeds.model.DogImage(id = e.referenceImageId ?: "", url = e.imageUrl ?: "")
     )
 }

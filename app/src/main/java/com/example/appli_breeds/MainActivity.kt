@@ -59,6 +59,3 @@ fun AppliChiens() {
         )
     }
 }
-
-// ajouter le truc en local du coup
-//trier l'appli
