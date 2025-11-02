@@ -1,6 +1,7 @@
 package com.example.appli_breeds
 
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -13,7 +14,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,11 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.example.appli_breeds.model.Chien
+import com.example.appli_breeds.model.imageIdForFavourite
 
 // --- Destinations
 sealed class Destination
@@ -45,19 +52,38 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppliChiens() {
     val backStack = remember { mutableStateListOf<Destination>(ListeRaces) }
-    val viewModel: DogViewModel = viewModel()
-    val chiens by viewModel.dogs.collectAsState(initial = emptyList())
 
-    LaunchedEffect(Unit) { viewModel.loadDogs() }
+    // ---- subId stable par appareil (pour TheDogAPI favourites) ----
+    val ctx = LocalContext.current
+    val subId = remember {
+        Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown-device"
+    }
+
+    // ---- ViewModel unique, injecté avec subId ----
+    val vm: DogViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return DogViewModel(subId = subId) as T
+            }
+        }
+    )
+
+    val chiens by vm.dogs.collectAsState(initial = emptyList())
+
+    LaunchedEffect(Unit) { vm.loadDogs() }
 
     when (val top = backStack.last()) {
         is ListeRaces -> EcranListeChiens(
             chiens = chiens,
+            vm = vm,
             onChienClick = { backStack.add(DetailRace(it)) },
             onAvatarClick = { backStack.add(ListeFavoris) }
         )
         is ListeFavoris -> EcranFavoris(
-            onBack = { backStack.removeLastOrNull() }
+            vm = vm,
+            onBack = { backStack.removeLastOrNull() },
+            onChienClick = { backStack.add(DetailRace(it)) }
         )
         is DetailRace -> EcranDetailChien(
             chien = top.chien,
@@ -70,11 +96,10 @@ fun AppliChiens() {
 @Composable
 fun EcranListeChiens(
     chiens: List<Chien>,
+    vm: DogViewModel,
     onChienClick: (Chien) -> Unit,
     onAvatarClick: () -> Unit
 ) {
-    val vm: DogViewModel = viewModel()
-
     var query by rememberSaveable { mutableStateOf("") }
     val visible by vm.visibleBreeds.collectAsState()
 
@@ -163,7 +188,7 @@ fun EcranListeChiens(
             } else {
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(data) { chien ->
-                        LigneChien(chien = chien, onClick = { onChienClick(chien) })
+                        LigneChien(chien = chien, onClick = { onChienClick(chien) }, vm = vm)
                         Divider()
                     }
                 }
@@ -173,7 +198,14 @@ fun EcranListeChiens(
 }
 
 @Composable
-fun LigneChien(chien: Chien, onClick: () -> Unit) {
+fun LigneChien(
+    chien: Chien,
+    onClick: () -> Unit,
+    vm: DogViewModel
+) {
+    val favMap by vm.favMap.collectAsState()
+    val isFav = remember(favMap, chien) { chien.imageIdForFavourite()?.let { favMap.contains(it) } == true }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,7 +214,7 @@ fun LigneChien(chien: Chien, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = chien.imageUrl ?: chien.image.url,
+            model = chien.imageUrl,
             contentDescription = chien.name,
             modifier = Modifier
                 .size(64.dp)
@@ -198,6 +230,10 @@ fun LigneChien(chien: Chien, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        IconButton(onClick = { vm.toggleFavourite(chien) }) {
+            if (isFav) Icon(Icons.Filled.Favorite, contentDescription = "Retirer des favoris")
+            else Icon(Icons.Outlined.FavoriteBorder, contentDescription = "Ajouter aux favoris")
         }
     }
 }
@@ -274,28 +310,31 @@ fun EcranDetailChien(chien: Chien, onRetour: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EcranFavoris(
-    onBack: () -> Unit
-) {
+fun EcranFavoris(onBack: () -> Unit, onChienClick: (Chien) -> Unit, vm: DogViewModel) {
+    val dogs by vm.dogs.collectAsState()
+    val favMap by vm.favMap.collectAsState()
+    val favoris = remember(dogs, favMap) { dogs.filter { it.imageIdForFavourite()?.let(favMap::containsKey) == true } }
+
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Mes favoris") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
-                    }
-                }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Retour") } }
             )
         }
     ) { padding ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Aucun favori pour l’instant.")
+        if (favoris.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text("Aucun favori pour l’instant.")
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+                items(favoris) { chien ->
+                    LigneChien(chien = chien, onClick = { onChienClick(chien) }, vm = vm)
+                    Divider()
+                }
+            }
         }
     }
 }
@@ -311,6 +350,7 @@ fun InfoTexte(label: String, value: String) {
 }
 
 
-// détail : l'histoire et la description des races ne fonctionnent pas donc surement que ça ne s'appelle pas comme ça.
-// favoris ne fonctionne pas : l'ajouter dans le repository et dans le frnt, juste la page a été ajoutée
 // faire le système de filtre
+// ajouter le truc en local du coup
+//trier l'appli
+// tout mettre sur des pages différentes

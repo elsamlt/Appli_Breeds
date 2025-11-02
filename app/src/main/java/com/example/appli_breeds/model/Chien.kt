@@ -44,3 +44,5 @@ class DogImage(
     val width: Int = 0,
     val height: Int = 0
 )
+
+fun Chien.imageIdForFavourite(): String? = image?.id ?: reference_image_id
